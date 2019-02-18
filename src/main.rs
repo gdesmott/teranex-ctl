@@ -249,7 +249,7 @@ mod tests {
     fn set_video_mode() {
         env_logger::init();
 
-        let host = env::var("TERANEX_HOST").expect("define TERANEXT_HOST to run tests");
+        let host = env::var("TERANEX_HOST").expect("define TERANEX_HOST to run tests");
         let mut conn = Connection::new(&host).unwrap();
         conn.read().unwrap();
 
