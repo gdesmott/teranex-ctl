@@ -101,7 +101,7 @@ impl VideoMode {
     fn name(&self) -> Result<&'static str, Error> {
         match self {
             VideoMode::Mode525i59_94 => Ok("525i59.94_NTSC"),
-            VideoMode::Mode625i50 => Ok("625i50"),
+            VideoMode::Mode625i50 => Ok("625i50_PAL"),
             VideoMode::Mode720p50 => Ok("720p50"),
             VideoMode::Mode720p59_94 => Ok("720p59.94"),
             VideoMode::Mode720p60 => Ok("720p60"),
@@ -137,7 +137,7 @@ impl VideoMode {
     }
 
     fn protocol_name(&self) -> Result<String, Error> {
-        Ok(str::replace(self.name()?, "_", " "))
+        Ok(str::replace(self.name()?, "_", " ").replace("-", " "))
     }
 }
 
