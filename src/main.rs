@@ -205,23 +205,62 @@ impl Connection {
         Ok(())
     }
 
-    fn check_reply(&mut self) -> Result<(), Error> {
-        if self.read()?.starts_with("ACK\n") {
-            Ok(())
+    fn check_reply(&mut self) -> Result<String, Error> {
+        let reply = self.read()?;
+        if reply.starts_with("ACK\n") {
+            Ok(reply)
         } else {
             bail!("Request failed")
         }
     }
 
+    fn parse_output_video_mode(&self, status: &str) -> Result<String, Error> {
+        let mut in_video_output = false;
+
+        for l in status.split('\n') {
+            if l == "VIDEO OUTPUT:" {
+                in_video_output = true;
+            } else if l.starts_with("Video mode:") && in_video_output {
+                let mode = l.split(':').nth(1).unwrap();
+                return Ok(mode.trim().to_string());
+            }
+        }
+
+        bail!("No output video mode in status");
+    }
+
     fn set_video_mode(&mut self, mode: &VideoMode) -> Result<(), Error> {
         let name = mode.protocol_name()?;
-        info!("Setting mode to {}", name);
+
+        // Check current mode
+        self.write("VIDEO OUTPUT:")?;
+        self.write("")?;
+        let reply = self.check_reply()?;
+        let current_mode = self.parse_output_video_mode(&reply)?;
+
+        if current_mode == name {
+            info!("Output video mode is already {}", name);
+            return Ok(());
+        }
+
+        info!("Setting mode from {} to {}", current_mode, name);
         let video_mode = format!("Video mode: {}", name);
         self.write("VIDEO OUTPUT:")?;
         self.write(&video_mode)?;
         self.write("")?;
 
-        self.check_reply()
+        // Check if the mode has actually been updated
+        let reply = self.check_reply()?;
+        let new_mode = self.parse_output_video_mode(&reply)?;
+
+        if new_mode != name {
+            bail!(format!(
+                "New video mode is {} while it should be {}",
+                new_mode, name
+            ));
+        }
+
+        Ok(())
     }
 }
 
